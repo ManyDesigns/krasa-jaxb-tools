@@ -758,7 +758,7 @@ public class JaxbValidationPlugin extends Plugin {
 
     private BigDecimal parseIntegerXsFacet(XSFacet facet) {
         final String str = facet.getValue().value;
-        if (str == null || str.isBlank()) {
+        if (str == null || str.isEmpty()) {
             return null;
         }
         

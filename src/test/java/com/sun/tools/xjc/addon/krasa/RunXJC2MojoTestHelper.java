@@ -20,10 +20,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+
 import org.apache.maven.project.MavenProject;
 import org.jvnet.jaxb2.maven2.AbstractXJC2Mojo;
 import org.jvnet.jaxb2.maven2.test.RunXJC2Mojo;
@@ -69,7 +67,7 @@ public abstract class RunXJC2MojoTestHelper extends RunXJC2Mojo {
 
     @Override
     public List<String> getArgs() {
-        return List.of(
+        return Arrays.asList(
                 "-XJsr303Annotations",
                 "-XJsr303Annotations:targetNamespace=" + getNamespace(),
                 "-XJsr303Annotations:JSR_349=true",
@@ -93,7 +91,7 @@ public abstract class RunXJC2MojoTestHelper extends RunXJC2Mojo {
 
     private List<String> readFile(String filename) throws IOException {
         String ns = getNamespace();
-        ns = ns.isBlank() ? "generated" : ns;
+        ns = ns.isEmpty() ? "generated" : ns;
         String fullPath = getGeneratedDirectory().getAbsolutePath() + File.separator +
                 ns + File.separator + filename;
         Path path = Paths.get(fullPath);
@@ -168,7 +166,7 @@ public abstract class RunXJC2MojoTestHelper extends RunXJC2Mojo {
         private int prevAttributeLine(String attributeName, int attributeLine) {
             for (int i = attributeLine - 1; i >= 0; i--) {
                 String line = lines.get(i).trim();
-                if (line.isBlank() ||
+                if (line.isEmpty() ||
                         line.startsWith("public ") ||
                         line.startsWith("protected ")) {
                     return i + 1;
@@ -262,7 +260,7 @@ public abstract class RunXJC2MojoTestHelper extends RunXJC2Mojo {
                 int start = line.indexOf("(");
                 values = line.substring(start + 1, line.length() - 1);
             }
-            if (!values.isBlank()) {
+            if (!values.isEmpty()) {
                 if (line.contains("=")) {
                     String[] pairs = values.split(",");
                     for (String p : pairs) {

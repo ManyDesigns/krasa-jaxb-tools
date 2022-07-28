@@ -6,22 +6,27 @@ import com.sun.tools.xjc.Plugin;
 import com.sun.tools.xjc.outline.ClassOutline;
 import com.sun.tools.xjc.outline.Outline;
 import java.io.StringWriter;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 
 public class PrimitiveFixerPlugin extends Plugin {
 
     private static final String OPTION_NAME = "XReplacePrimitives";
-    private static final Map<String, Class<?>> PRIMITIVE_MAPPINGS = Map.of(
-            "int", Integer.class,
-            "long", Long.class,
-            "boolean", Boolean.class,
-            "double", Double.class,
-            "float", Float.class,
-            "byte", Byte.class,
-            "short", Short.class
-    );
+    private static final Map<String, Class<?>> PRIMITIVE_MAPPINGS = new HashMap<>();
+    static {
+        PRIMITIVE_MAPPINGS.put( "int", Integer.class );
+        PRIMITIVE_MAPPINGS.put( "long", Long.class );
+        PRIMITIVE_MAPPINGS.put( "boolean", Boolean.class );
+        PRIMITIVE_MAPPINGS.put( "double", Double.class );
+        PRIMITIVE_MAPPINGS.put( "float", Float.class );
+        PRIMITIVE_MAPPINGS.put( "byte", Byte.class );
+        PRIMITIVE_MAPPINGS.put( "short", Short.class );
+        
+    }
 
     @Override
     public String getOptionName() {
