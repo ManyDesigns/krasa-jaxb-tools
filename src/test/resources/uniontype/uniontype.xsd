@@ -24,9 +24,15 @@
     </xs:simpleType>
 
     <xs:complexType name="aComplexType" >
-            <xs:attribute name="aString" type="stringEnum"   />
-            <xs:attribute name="id" type="tID"   />
+            <xs:attribute name="aString" type="stringEnum" />
+            <xs:attribute name="id" type="tUUID"   />
     </xs:complexType>
     <xs:element name="anElement" type="aComplexType" />
+
+    <xs:complexType name="aComplexType2" >
+        <xs:attribute name="aString" type="stringEnum" />
+        <xs:attribute name="id" type="tID"   />
+    </xs:complexType>
+    <xs:element name="anElement2" type="aComplexType2" />
 
 </xs:schema>

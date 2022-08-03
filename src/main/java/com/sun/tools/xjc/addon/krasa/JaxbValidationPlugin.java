@@ -1,24 +1,15 @@
 package com.sun.tools.xjc.addon.krasa;
 
-import com.sun.codemodel.JAnnotatable;
-import com.sun.codemodel.JAnnotationArrayMember;
-import com.sun.codemodel.JAnnotationUse;
-import com.sun.codemodel.JFieldVar;
+import com.sun.codemodel.*;
 import com.sun.tools.xjc.BadCommandLineException;
 import com.sun.tools.xjc.Options;
 import com.sun.tools.xjc.Plugin;
-import com.sun.tools.xjc.model.CAttributePropertyInfo;
-import com.sun.tools.xjc.model.CElementPropertyInfo;
-import com.sun.tools.xjc.model.CPropertyInfo;
-import com.sun.tools.xjc.model.CValuePropertyInfo;
+import com.sun.tools.xjc.model.*;
 import com.sun.tools.xjc.outline.ClassOutline;
 import com.sun.tools.xjc.outline.FieldOutline;
 import com.sun.tools.xjc.outline.Outline;
 import com.sun.xml.xsom.*;
-import com.sun.xml.xsom.impl.AttributeUseImpl;
-import com.sun.xml.xsom.impl.ElementDecl;
-import com.sun.xml.xsom.impl.ParticleImpl;
-import com.sun.xml.xsom.impl.SimpleTypeImpl;
+import com.sun.xml.xsom.impl.*;
 import com.sun.xml.xsom.impl.parser.DelayedRef;
 import cz.jirutka.validator.collection.constraints.EachDecimalMax;
 import cz.jirutka.validator.collection.constraints.EachDecimalMin;
@@ -31,6 +22,10 @@ import java.util.List;
 import javax.persistence.Column;
 import javax.validation.Valid;
 import javax.validation.constraints.*;
+
+import org.apache.commons.lang.StringUtils;
+import org.hibernate.validator.constraints.CompositionType;
+import org.hibernate.validator.constraints.ConstraintComposition;
 import org.xml.sax.ErrorHandler;
 
 /**
@@ -38,8 +33,8 @@ import org.xml.sax.ErrorHandler;
  * NOTE: fractionDigits fixed attribute cannot be translated into a meaningful Validation.
 
  * 
- * @see https://github.com/fillumina/krasa-jaxb-tools
- * 
+ *
+ * @author Giampiero Granatella
  * @author Francesco Illuminati
  * @author Vojtěch Krása
  * @author cocorossello
@@ -170,6 +165,8 @@ public class JaxbValidationPlugin extends Plugin {
                 } else if (property instanceof CValuePropertyInfo) {
                     processAttribute((CValuePropertyInfo) property, co, model);
 
+                } else if (property instanceof CReferencePropertyInfo) {
+                    //nothing to do at the moment
                 }
             }
         }
@@ -304,8 +301,7 @@ public class JaxbValidationPlugin extends Plugin {
         }
         
         final String fieldName = field.type().name();
-        if ("String".equals(fieldName) && 
-                !hasAnnotation(field, Pattern.class)) {
+        if ("String".equals(fieldName)) {
             
             final XSFacet patternFacet = simpleType.getFacet("pattern");
             final List<XSFacet> patternList = simpleType.getFacets("pattern");
@@ -425,6 +421,19 @@ public class JaxbValidationPlugin extends Plugin {
         if (message != null) {
             annotation.param("message", message);
         }
+
+    }
+
+    private void addOrContraintAnnotaion(ClassOutline co, JFieldVar field) {
+        final String className = co.implClass.name();
+
+
+
+        log("@ConstraintComposition(OR): " + field.name() + " added to class " + className);
+
+        final JAnnotationUse annotation = field.annotate( ConstraintComposition.class);
+        annotation.param("value", CompositionType.OR);
+
 
     }
 
@@ -732,6 +741,23 @@ public class JaxbValidationPlugin extends Plugin {
 
         addValidAnnotation(type, var, propertyName, className);
         processType(type, var, propertyName, className);
+
+        //If it is a Union Type I have to add all the constraint and make them with an Or clause
+        if(type instanceof UnionSimpleTypeImpl ) {
+
+            UnionSimpleTypeImpl unionType = ((UnionSimpleTypeImpl) type);
+
+            try {
+                CodeModelUtil.createComposedConstraintAnnotation(model.getCodeModel(), clase._package()._package(), particle.getBaseType().getName() );
+            } catch (JClassAlreadyExistsException e) {
+                throw new RuntimeException( e );
+            }
+           /* for(int i =0; i < unionType.getMemberSize(); i++) {
+                XSSimpleType subType = unionType.getMember( i );
+                processType( subType, var, propertyName, className );
+            }*/
+
+        }
     }
 
     public void processAttribute(CAttributePropertyInfo property,
@@ -753,17 +779,35 @@ public class JaxbValidationPlugin extends Plugin {
         }
 
         addValidAnnotation(type, var, propertyName, className);
+        if(type instanceof UnionSimpleTypeImpl ) {
+
+            UnionSimpleTypeImpl unionType = ((UnionSimpleTypeImpl) type);
+
+            try {
+                CodeModelUtil.createComposedConstraintAnnotation(model.getCodeModel(), clase._package()._package(),
+                        StringUtils.capitalize( type.getName()));
+            } catch (JClassAlreadyExistsException e) {
+                throw new RuntimeException( e );
+            }
+           /* for(int i =0; i < unionType.getMemberSize(); i++) {
+                XSSimpleType subType = unionType.getMember( i );
+                processType( subType, var, propertyName, className );
+            }*/
+
+        }
         processType(type, var, propertyName, className);
+
+
     }
 
     private BigDecimal parseIntegerXsFacet(XSFacet facet) {
         final String str = facet.getValue().value;
-        if (str == null || str.isEmpty()) {
+        if (str == null || StringUtils.isBlank( str )|| StringUtils.trimToNull( str )==null) {
             return null;
         }
-        
+
         try {
-            return new BigDecimal(str);
+            return new BigDecimal( str );
         } catch (NumberFormatException e) {
             return null;
         }

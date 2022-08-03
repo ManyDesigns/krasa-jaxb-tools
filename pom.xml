@@ -56,7 +56,7 @@
         <maven-jaxb2-plugin.version>0.8.2</maven-jaxb2-plugin.version>
         <jaxb.version>2.2.6</jaxb.version>
         <validation-api.version>2.0.1.Final</validation-api.version>
-        <hibernate-validator.version>4.2.0.Final</hibernate-validator.version>
+        <hibernate-validator.version>7.0.4.Final</hibernate-validator.version>
         <jaxb-api.version>2.2</jaxb-api.version>
         <maven-source-plugin.version>2.2</maven-source-plugin.version>
         <junit.version>4.10</junit.version>
@@ -123,6 +123,11 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.12.0</version>
+        </dependency>
+        <dependency>
             <groupId>com.sun.xml.bind</groupId>
             <artifactId>jaxb-impl</artifactId>
             <version>${jaxb.version}</version>
@@ -146,11 +151,11 @@
             <version>${maven-jaxb2-plugin.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.hibernate</groupId>
+            <groupId>org.hibernate.validator</groupId>
             <artifactId>hibernate-validator</artifactId>
-            <version>${hibernate-validator.version}</version>
-            <scope>test</scope>
+            <version>${hibernate-validator.version}l</version>
         </dependency>
+
         <dependency>
             <groupId>javax.xml.bind</groupId>
             <artifactId>jaxb-api</artifactId>
