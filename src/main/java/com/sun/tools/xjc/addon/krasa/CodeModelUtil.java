@@ -6,6 +6,7 @@ import org.hibernate.validator.constraints.CompositionType;
 import org.hibernate.validator.constraints.ConstraintComposition;
 
 import javax.validation.Constraint;
+import javax.validation.Payload;
 import java.lang.annotation.*;
 import java.lang.reflect.Array;
 import java.util.Arrays;
@@ -34,8 +35,27 @@ public class CodeModelUtil {
         clazz.annotate(model.ref( Retention.class)).param( "value", model.ref( RetentionPolicy.class).staticRef("RUNTIME"));
         clazz.annotate(model.ref( Constraint.class)).paramArray( "validatedBy" );
         clazz.annotate(model.ref( ConstraintComposition.class)).param( "value", model.ref( CompositionType.class).staticRef("OR"));
-        JMethod groups = clazz.method(JMod.PUBLIC, Class[].class, "groups" );
-        
+        JMethod groups = clazz.method(JMod.PUBLIC, model
+                .ref(Class.class).narrow(
+                                model.ref(Object.class).wildcard()).array(), "groups" );
+        JMethod payload = clazz.method(JMod.PUBLIC, model
+                        .ref(Class.class).narrow(
+                                model.ref( Payload.class).wildcard()).array(), "payload" );
+
+        groups.declareDefaultValue(new JExpressionImpl(){
+            @Override
+            public void generate(JFormatter f) {
+                f.p("{}");
+            }
+        });
+
+        payload.declareDefaultValue(new JExpressionImpl(){
+            @Override
+            public void generate(JFormatter f) {
+                f.p("{}");
+            }
+        });
+
         return clazz;
 
         /*
