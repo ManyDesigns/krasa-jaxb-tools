@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import javax.persistence.Column;
 import javax.validation.Valid;
 import javax.validation.constraints.*;
@@ -309,19 +310,11 @@ public class JaxbValidationPlugin extends Plugin {
         final String fieldName = field.type().name();
         if ("String".equals(fieldName)) {
             
-            final XSFacet patternFacet = simpleType.getFacet("pattern");
+            XSFacet patternFacet = simpleType.getFacet("pattern");
             final List<XSFacet> patternList = simpleType.getFacets("pattern");
-
-            if (patternList.size() > 1) { // More than one pattern
+            if (patternList.size() > 0) { // More than one pattern
                 addPatternListAnnotation(simpleType, propertyName, className, field, patternList, target);
-
-            } else if (patternFacet != null) {
-                
-                String pattern = patternFacet.getValue().value;
-                addSinlgePatternAnnotation(simpleType, propertyName, className, field, pattern, target);
-
             } else {
-
                 addPatternEmptyAnnotation(simpleType, propertyName, className, field, target);
             }
         }
@@ -663,21 +656,38 @@ public class JaxbValidationPlugin extends Plugin {
             listValue.annotate(Pattern.class)
                     .param("regexp",replaceRegexp(basePattern));
             
-            annotateSinglePattern(basePattern, propertyName, className, listValue, 
+            annotateSinglePattern(basePattern, propertyName, className, listValue,
                     false);
             
         } else {
             
-            annotateSinglePattern(pattern, propertyName, className, field, false);
+            annotateSinglePattern(pattern, propertyName, className, annotatable, false);
         }
     }
 
     private void addPatternListAnnotation(XSSimpleType simpleType, String propertyName, 
             String className, JFieldVar field, List<XSFacet> patternList, JAnnotatable annotatable) {
-        
-        if (simpleType.getBaseType() instanceof XSSimpleType &&
+            JAnnotationUse patternListAnnotation;
+        final JAnnotationUse annotation = getAnnotation( annotatable, Pattern.List.class );
+        if(annotation !=null){
+               patternListAnnotation = annotation;
+            } else {
+            patternListAnnotation = annotatable.annotate( Pattern.List.class );
+        }
+            JAnnotationArrayMember listValue = patternListAnnotation.paramArray("value");
+
+            for(XSFacet facet : patternList){
+                String basePattern = facet.getValue().value;
+                listValue.annotate(Pattern.class)
+                        .param("regexp",replaceRegexp(basePattern));
+ }
+
+            log("@Pattern: " + propertyName + " added to class " + className);
+            final JAnnotationUse patternAnnotation = listValue.annotate(Pattern.class);
+            annotateMultiplePattern(patternList, patternAnnotation, false);
+        /*if (simpleType.getBaseType() instanceof XSSimpleType &&
                 ((XSSimpleType) simpleType.getBaseType()).getFacet("pattern") != null) {
-            
+
             log("@Pattern.List: " + propertyName + " added to class " + className);
 
             JAnnotationUse patternListAnnotation = annotatable.annotate(Pattern.List.class);
@@ -694,9 +704,9 @@ public class JaxbValidationPlugin extends Plugin {
         } else {
             
             log("@Pattern: " + propertyName + " added to class " + className);
-            final JAnnotationUse patternAnnotation = field.annotate(Pattern.class);
+            final JAnnotationUse patternAnnotation = annotatable.annotate(Pattern.class);
             annotateMultiplePattern(patternList, patternAnnotation, false);
-        }
+        }        */
     }
     
     private void annotateSinglePattern(String pattern, String propertyName, String className,
@@ -813,9 +823,7 @@ public class JaxbValidationPlugin extends Plugin {
 
         addValidAnnotation(type, var, propertyName, className);
         if(type instanceof UnionSimpleTypeImpl ) {
-
             processUnionType( clase, model, propertyName, className, type, var );
-
         } else {
             processType( type, var, propertyName, className );
         }
@@ -869,15 +877,14 @@ public class JaxbValidationPlugin extends Plugin {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public boolean hasAnnotation(JFieldVar var, Class annotationClass) {
+    public boolean hasAnnotation(JAnnotatable var, Class annotationClass) {
         List<JAnnotationUse> list = 
                 (List<JAnnotationUse>) Utils.getField("annotations", var);
         if (list != null) {
             for (JAnnotationUse annotationUse : list) {
-                //todo: I don't like this to improve
-                if (Utils.getField("clazz._class", annotationUse)!=null){
-                    return false;
-                }
+
+                if (((Class) Utils.getField("clazz._class", annotationUse))==null)
+                    continue;
                 if (((Class) Utils.getField("clazz._class", annotationUse)).
                         getCanonicalName().equals(
                                 annotationClass.getCanonicalName())) {
@@ -886,6 +893,25 @@ public class JaxbValidationPlugin extends Plugin {
             }
         }
         return false;
+    }
+
+    public JAnnotationUse getAnnotation(JAnnotatable var, Class annotationClass) {
+
+        List<JAnnotationUse> list =
+                (List<JAnnotationUse>) Utils.getField("annotations", var);
+        if (list != null) {
+            for (JAnnotationUse annotationUse : list) {
+
+                if (((Class) Utils.getField("clazz._class", annotationUse))==null)
+                    continue;
+                if (((Class) Utils.getField("clazz._class", annotationUse)).
+                        getCanonicalName().equals(
+                                annotationClass.getCanonicalName())) {
+                    return annotationUse;
+                }
+            }
+        }
+        return null;
     }
 
     private String propertyName(CElementPropertyInfo property) {
