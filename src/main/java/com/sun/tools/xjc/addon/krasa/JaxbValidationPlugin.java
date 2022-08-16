@@ -17,6 +17,7 @@ import cz.jirutka.validator.collection.constraints.EachDigits;
 import cz.jirutka.validator.collection.constraints.EachSize;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
@@ -25,6 +26,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.*;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.cxf.tools.common.model.JAnnotation;
 import org.xml.sax.ErrorHandler;
 
 /**
@@ -303,15 +305,17 @@ public class JaxbValidationPlugin extends Plugin {
             }
         }
 
-        final String fieldName = field.type().name();
-        if ("String".equals( fieldName )) {
+        if ("String".equals( field.type().name() )) {
 
             XSFacet patternFacet = simpleType.getFacet( "pattern" );
             final List<XSFacet> patternList = simpleType.getFacets( "pattern" );
-            if (patternList.size() > 0) { // More than one pattern
-                addPatternListAnnotation( simpleType, propertyName, className, field, patternList, target );
+            if (patternList.size() > 1) { // More than one pattern
+                addPatternListAnnotation(simpleType, propertyName, className, field, patternList, target);
+            } else if (patternFacet != null) {
+                String pattern = patternFacet.getValue().value;
+                addSinglePatternAnnotation(simpleType, propertyName, className, field, pattern, target);
             } else {
-                addPatternEmptyAnnotation( simpleType, propertyName, className, field, target );
+                addPatternEmptyAnnotation(simpleType, propertyName, className, field, target);
             }
         }
     }
@@ -638,17 +642,17 @@ public class JaxbValidationPlugin extends Plugin {
         }
     }
 
-    private void addSinlgePatternAnnotation(XSSimpleType simpleType, String propertyName,
+    private void addSinglePatternAnnotation(XSSimpleType simpleType, String propertyName,
                                             String className, JFieldVar field, String pattern) {
-        addSinlgePatternAnnotation( simpleType, propertyName,
+        addSinglePatternAnnotation( simpleType, propertyName,
                 className, field, pattern, field );
     }
 
-    private void addSinlgePatternAnnotation(XSSimpleType simpleType, String propertyName,
+    private void addSinglePatternAnnotation(XSSimpleType simpleType, String propertyName,
                                             String className, JFieldVar field, String pattern, JAnnotatable annotatable) {
 
-
-        if (simpleType.getBaseType() instanceof XSSimpleType &&
+        annotateSinglePattern( pattern, propertyName, className, annotatable, false );
+       /* if (simpleType.getBaseType() instanceof XSSimpleType &&
                 ((XSSimpleType) simpleType.getBaseType()).getFacet( "pattern" ) != null) {
 
             final XSSimpleType baseType = (XSSimpleType) simpleType.getBaseType();
@@ -669,61 +673,16 @@ public class JaxbValidationPlugin extends Plugin {
         } else {
 
             annotateSinglePattern( pattern, propertyName, className, annotatable, false );
-        }
+        } */
     }
 
     private void addPatternListAnnotation(XSSimpleType simpleType, String propertyName,
                                           String className, JFieldVar field, List<XSFacet> patternList, JAnnotatable annotatable) {
-        JAnnotationUse patternListAnnotation;
-        final JAnnotationUse annotation = getAnnotation( annotatable, Pattern.List.class );
-        if (annotation != null) {
-            patternListAnnotation = annotation;
-        } else {
-            patternListAnnotation = annotatable.annotate( Pattern.List.class );
-        }
-        JAnnotationValue jann = null;
-        try {
-            jann = patternListAnnotation.getAnnotationMembers().get( "value" );
-        } catch (Exception e){
-            //do nothing
-        }
-        JAnnotationArrayMember listValue;
-        if(jann == null)
-            listValue = patternListAnnotation.paramArray( "value" );
-        else
-            listValue = (JAnnotationArrayMember) jann;
 
-        for (XSFacet facet : patternList) {
-            String basePattern = facet.getValue().value;
-            listValue.annotate( Pattern.class )
-                    .param( "regexp", replaceRegexp( basePattern ) );
-        }
-
-        log( "@Pattern: " + propertyName + " added to class " + className );
-        final JAnnotationUse patternAnnotation = listValue.annotate( Pattern.class );
-        annotateMultiplePattern( patternList, patternAnnotation, false );
-        /*if (simpleType.getBaseType() instanceof XSSimpleType &&
-                ((XSSimpleType) simpleType.getBaseType()).getFacet("pattern") != null) {
-
-            log("@Pattern.List: " + propertyName + " added to class " + className);
-
-            JAnnotationUse patternListAnnotation = annotatable.annotate(Pattern.List.class);
-            JAnnotationArrayMember listValue = patternListAnnotation.paramArray("value");
-
-            String basePattern = ((XSSimpleType) simpleType.getBaseType()).getFacet("pattern").getValue().value;
-            listValue.annotate(Pattern.class)
-                    .param("regexp",replaceRegexp(basePattern));
-
-            log("@Pattern: " + propertyName + " added to class " + className);
-            final JAnnotationUse patternAnnotation = listValue.annotate(Pattern.class);
-            annotateMultiplePattern(patternList, patternAnnotation, false);
-            
-        } else {
-            
             log("@Pattern: " + propertyName + " added to class " + className);
             final JAnnotationUse patternAnnotation = annotatable.annotate(Pattern.class);
             annotateMultiplePattern(patternList, patternAnnotation, false);
-        }        */
+
     }
 
     private void annotateSinglePattern(String pattern, String propertyName, String className,
@@ -735,8 +694,17 @@ public class JaxbValidationPlugin extends Plugin {
             if (literal) {
                 replaceRegexp = escapeRegexp( replaceRegexp );
             }
-            annotable.annotate( Pattern.class )
-                    .param( "regexp", replaceRegexp );
+            if(hasAnnotation( annotable, Pattern.class )){
+                JAnnotationUse annotationUse = getAnnotation( annotable, Pattern.class );
+                final StringWriter str = new StringWriter();
+                ((JAnnotationValue) annotationUse.getAnnotationMembers().get( "regexp" )).generate( new JFormatter( str ) );
+                String prevValue = str.toString();
+                prevValue = prevValue.substring( 1, prevValue.length() - 1 );
+                annotationUse.param( "regexp", "("+prevValue+")|("+replaceRegexp+")" );
+            }  else{
+                annotable.annotate( Pattern.class )
+                        .param( "regexp", replaceRegexp );
+            }
         }
     }
 
@@ -814,9 +782,7 @@ public class JaxbValidationPlugin extends Plugin {
 
         //If it is a Union Type I have to add all the constraint and make them with an Or clause
         if (type instanceof UnionSimpleTypeImpl) {
-
             processUnionType( clase, model, propertyName, className, type, var );
-
         } else {
             processType( type, var, propertyName, className );
         }

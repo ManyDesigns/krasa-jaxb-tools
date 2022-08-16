@@ -14,23 +14,13 @@ public class MultiplePatternsWithBaseTest extends RunXJC2MojoTestHelper {
     public String getNamespace() {
         return "a";
     }
-    
+
+    //I don't support anymore multiplepatttern withBase it is incompatible wtih uniontype
     public void test() {
-        List<String> annotations = element("MultiPatternWithBase")
-                .getAnnotations("multiplePatternsWithBase");
-        
-        assertFalse(annotations.isEmpty());
-        
-        String text = annotations.stream()
-                .map(s -> s.trim())
-                .collect(Collectors.joining("\n"));
-        
-        String expected = "@Pattern.List({\n" +
-            "@Pattern(regexp = \"[Y-Z]\"),\n" +
-            "@Pattern(regexp = \"([0-9])|([A-B])\")\n" +
-            "})";
-        
-        assertEquals(expected, text);
+        element("MultiPatternWithBase")
+                .attribute("multiplePatternsWithBase")
+                .annotation("Pattern")
+                .assertParam("regexp", "([0-9])|([A-B])");
     }
 
 }
