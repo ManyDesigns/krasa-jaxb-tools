@@ -111,7 +111,7 @@ public abstract class RunXJC2MojoTestHelper extends RunXJC2Mojo {
 
         public AttributeTester classAnnotations() {
             final String clazzName = filename.replace(".java", "");
-            int line = getLineForClass(clazzName);
+            int line = getLineForClassOrInterface(clazzName);
             List<String> annotationList = getAnnotations(clazzName, line);
             String definition = lines.get(line);
             return new AttributeTester(this, filename, clazzName, 
@@ -141,15 +141,18 @@ public abstract class RunXJC2MojoTestHelper extends RunXJC2Mojo {
             return RunXJC2MojoTestHelper.this;
         }
        
-        private int getLineForClass(String className) {
+        private int getLineForClassOrInterface(String className) {
             for (int i = 0, l = lines.size(); i < l; i++) {
                 String line = lines.get(i).trim();
-                if (line.startsWith("public class " + className)) {
+                if (line.startsWith("public class " + className)
+                || line.startsWith("public interface " + className)
+                || line.startsWith("public @interface " + className)
+                ) {
                     return i;
                 }
             }
             throw new AssertionError(
-                    "attribute " + className + " not found in file " + filename);
+                    "public class " + className + " not found in file " + filename);
         }
 
         private int getLineForAttribute(String attributeName) {

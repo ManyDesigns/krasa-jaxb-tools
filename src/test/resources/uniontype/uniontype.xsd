@@ -22,11 +22,9 @@
             <xs:enumeration value="R" />
         </xs:restriction>
     </xs:simpleType>
-
-
     <xs:complexType name="aComplexUnionType" >
         <xs:attribute name="id" type="tID"   />
+        <xs:attribute name="aString" type="stringEnum"   />
     </xs:complexType>
     <xs:element name="anElement" type="aComplexUnionType" />
-
 </xs:schema>

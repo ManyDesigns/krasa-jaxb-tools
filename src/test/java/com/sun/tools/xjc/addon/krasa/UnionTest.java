@@ -1,5 +1,7 @@
 package com.sun.tools.xjc.addon.krasa;
 
+import junit.framework.Assert;
+
 import javax.validation.constraints.Pattern;
 
 public class UnionTest extends RunXJC2MojoTestHelper {
@@ -10,10 +12,15 @@ public class UnionTest extends RunXJC2MojoTestHelper {
     }
 
     public void testId() {
-        element( "AComplexType" )
-                .attribute( "id" ).annotation("Pattern")
-                .assertParam("regexp", "(urn:uuid:)?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\\\\{[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\\\}")
-                .end();
+        Assert.assertNotNull("I must have a list of Pattern inside an Annotation Interface TIDValidator",element( "TIDValidator" ).classAnnotations()
+                .annotation("Pattern.List"));
+    }
+
+    public void testEnum() {
+        Assert.assertNotNull("I must have an enum annotaion on the attribute aString in a AComplexUnionType",element( "AComplexUnionType" )
+                .attribute("aString")
+                .annotation("Pattern")
+                );
     }
 
 
