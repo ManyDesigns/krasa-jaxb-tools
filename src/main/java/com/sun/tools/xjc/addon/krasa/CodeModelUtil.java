@@ -8,9 +8,6 @@ import org.hibernate.validator.constraints.ConstraintComposition;
 import javax.validation.Constraint;
 import javax.validation.Payload;
 import java.lang.annotation.*;
-import java.lang.reflect.Array;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Author: Giampiero Granatella
