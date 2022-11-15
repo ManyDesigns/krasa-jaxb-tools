@@ -644,10 +644,9 @@ public class JaxbValidationPlugin extends Plugin {
 
         } else { // if pattern does not exist
             Collection<JAnnotationUse> annotations = annotatable.annotations();
-            /*for (JAnnotationUse annotation : annotations) {
-                JClass type = annotation.getAnnotationClass();
-                if (type.name().equals("Pattern")) {*/
-            String pattern = ConfigReader.getConfig().getString("pattern_match_all");
+
+            /*String pattern = ConfigReader.getConfig().getString("pattern_match_all");*/
+            String pattern = "^[\\w.-]+$";
             if (hasAnnotation(annotatable, Pattern.class)) {
 
                 JAnnotationUse annotationUse = getAnnotation(annotatable, Pattern.class);
@@ -662,9 +661,6 @@ public class JaxbValidationPlugin extends Plugin {
                 log(regexp.toString());
             }
         }
-
-            /*}
-        }*/
     }
 
     private void addSinglePatternAnnotation(XSSimpleType simpleType, String propertyName,
